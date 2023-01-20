@@ -1,9 +1,29 @@
-const puppeteer = require('puppeteer');
+let puppeteer;
+let chrome = {};
+if (process.env.AWS_LAMBDA_FUNCTION_VERSION){
+    chrome = require("chrome-aws-lambda");
+    puppeteer = require('puppeteer-core');
+}
+else{
+    puppeteer = require('puppeteer');
+}
 
 const unstopData = async(req, res, next) => {
+
+    let options = {};
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION){
+        options = {
+            args : [...chrome.args , "--hide-scrollbars" , "--disable-web-security"],
+            defaultViewport : chrome.defaultViewport,
+            executablePath : await chrome.executablePath,
+            headless : true,
+            ignoreHTTPSErrors : true
+        };
+    }
+
     try{
         const scrapingUnstop = async () => {
-            const browser = await puppeteer.launch({});
+            const browser = await puppeteer.launch(options);
             const page = await browser.newPage();
             await page.goto("https://unstop.com/hackathons?filters=,all,open,all&types=teamsize,payment,oppstatus,eligible&sort=daysleft&dir=asc");
 
@@ -69,9 +89,21 @@ const unstopData = async(req, res, next) => {
 
 
 const googleKickstartData = async(req, res, next) => {
+
+    let options = {};
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION){
+        options = {
+            args : [...chrome.args , "--hide-scrollbars" , "--disable-web-security"],
+            defaultViewport : chrome.defaultViewport,
+            executablePath : await chrome.executablePath,
+            headless : true,
+            ignoreHTTPSErrors : true
+        };
+    }
+
     try{
         const scrapingKickstart = async () => {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch(options);
             const page = await browser.newPage();
             await page.goto("https://codingcompetitions.withgoogle.com/kickstart/schedule");
 
@@ -149,48 +181,82 @@ const googleKickstartData = async(req, res, next) => {
 
 
 const codeforcesData = async(req ,res , next) => {
+
+    let options = {};
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION){
+        options = {
+            args : [...chrome.args , "--hide-scrollbars" , "--disable-web-security"],
+            defaultViewport : chrome.defaultViewport,
+            executablePath : await chrome.executablePath,
+            headless : true,
+            ignoreHTTPSErrors : true
+        };
+    }
+
     try{
+        // const scrapingCodeforces = async () => {
+        //     const browser = await puppeteer.launch(options);
+        //     const page = await browser.newPage();
+        //     await page.goto("https://codeforces.com/contests");
+
+        //     const grabEvents = await page.evaluate(()=>{
+        //         const category = document.querySelectorAll("table");
+
+        //         const upcommingEventParent = category[0];
+
+        //         const upcommingEvents = upcommingEventParent.querySelectorAll("tr");
+        //         let eventList = [];
+
+        //         upcommingEvents.forEach((currEvent)=>{
+        //             const details = currEvent.querySelectorAll("td");
+        //             let eventDetails = {};
+        //             details.forEach((currDetail , i) => {
+        //                 if (i == 0){
+        //                     eventDetails.name = currDetail.innerText;
+        //                 }
+        //                 if (i == 2){
+        //                     eventDetails.time = currDetail.querySelector("a").innerText;
+        //                 }
+        //                 if (i == 3){
+        //                     eventDetails.duration = currDetail.innerText;
+        //                 }
+        //                 if (i == 5){
+        //                     try{
+        //                         eventDetails.link = currDetail.querySelector("a").getAttribute("href");
+        //                     }
+        //                     catch(e){
+        //                         eventDetails.link = "No links available"
+
+        //                     }
+        //                 }
+        //             })
+        //             eventList.push(eventDetails);
+        //         })
+
+        //         return eventList;
+        //     })
+
         const scrapingCodeforces = async () => {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch(options);
             const page = await browser.newPage();
             await page.goto("https://codeforces.com/contests");
 
             const grabEvents = await page.evaluate(()=>{
-                const category = document.querySelectorAll("table");
+                const category = document.querySelector("table");
 
-                const upcommingEventParent = category[0];
 
-                const upcommingEvents = upcommingEventParent.querySelectorAll("tr");
+
+                const upcommingEvents = category.querySelector("tr");
                 let eventList = [];
 
-                upcommingEvents.forEach((currEvent)=>{
-                    const details = currEvent.querySelectorAll("td");
-                    let eventDetails = {};
-                    details.forEach((currDetail , i) => {
-                        if (i == 0){
-                            eventDetails.name = currDetail.innerText;
-                        }
-                        if (i == 2){
-                            eventDetails.time = currDetail.querySelector("a").innerText;
-                        }
-                        if (i == 3){
-                            eventDetails.duration = currDetail.innerText;
-                        }
-                        if (i == 5){
-                            try{
-                                eventDetails.link = currDetail.querySelector("a").getAttribute("href");
-                            }
-                            catch(e){
-                                eventDetails.link = "No links available"
-
-                            }
-                        }
-                    })
-                    eventList.push(eventDetails);
-                })
+                const details = upcommingEvents.querySelector("th");
+                let eventDetails = {};
+                eventDetails.name = details.innerHTML;
+                eventList.push(eventDetails);
 
                 return eventList;
             })
+
 
             await browser.close();
             return grabEvents;
